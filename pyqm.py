@@ -15,8 +15,6 @@ import thread
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 
-import hooks
-
 PORT = 9898
 ADDRESS = "0.0.0.0"
 
@@ -51,8 +49,15 @@ def hook_received(hook):
     """
     Calls the hook function in the file hooks.py
     """
-    # Get the hook function pyt name "object_kind" from hooks.py
-    exec_hook = getattr(hooks, hook["object_kind"])
+    # Get the hook module, _m is for module
+    exec_module = __import__('scripts.' + hook["_m"], fromlist=[''])
+    # Make sure its up to date
+    reload(exec_module)
+    # Get the hook function, _f is for function
+    exec_hook = getattr(exec_module, hook["_f"])
+    # Delete the info thats not needed
+    del hook["_m"]
+    del hook["_f"]
     # Call the function and pass it the hook
     return exec_hook(hook)
 
@@ -69,7 +74,7 @@ def main():
     """
     port = PORT
     if len(sys.argv) > 1:
-        port = sys.argv[1]
+        port = int(sys.argv[1])
     start(port)
 
 if __name__ == '__main__':
